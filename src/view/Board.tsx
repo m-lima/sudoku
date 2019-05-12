@@ -54,7 +54,7 @@ const Cluster = ({board, errors, selected, dark, onClick, index}: ClusterProps) 
         let cell = new Coordinate(index.row * 3 + Math.floor(i / 3), index.column * 3 + (i % 3))
         return <Cell
             key={i}
-            selected={selected !== undefined && board.getValue(selected) !== 0 && board.getValue(selected) === board.getValue(cell)}
+            selected={selected !== undefined && (selected.equals(cell) || (board.getValue(selected) !== 0 && board.getValue(selected) === board.getValue(cell)))}
             highlighted={selected !== undefined && (cell.row === selected.row || cell.column === selected.column)}
             error={isErrorCell(cell, errors)}
             dark={dark}

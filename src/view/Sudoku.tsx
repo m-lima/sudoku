@@ -2,11 +2,19 @@ import React from 'react'
 import './css/Sudoku.css'
 
 import Board from './Board'
+import ValueBar from './ValueBar'
+
 import Coordinate from '../model/Coordinate'
 import GameState from '../model/GameState'
-import Matrix from "../model/Matrix";
+import Matrix from '../model/Matrix';
 
-export default class Sudoku extends React.Component<{}, GameState> {
+interface SudokuState extends GameState {
+  playing: boolean,
+  initial: Date,
+  elapsed: number;
+}
+
+export default class Sudoku extends React.Component<{}, SudokuState> {
 
   state = {
     board: new Matrix(),
@@ -14,6 +22,20 @@ export default class Sudoku extends React.Component<{}, GameState> {
     errors: [],
     selected: undefined,
     dark: false,
+    playing: false,
+    initial: new Date(),
+    elapsed: 0,
+  }
+
+  constructor(props: {}) {
+    super(props)
+    this.tick = this.tick.bind(this)
+  }
+
+  tick() {
+    if (this.state.playing) {
+      this.setState({elapsed: (new Date().valueOf() - this.state.initial.valueOf()) / 1000})
+    }
   }
 
   checkRow(index: Coordinate) {
@@ -92,10 +114,15 @@ export default class Sudoku extends React.Component<{}, GameState> {
     this.setState({errors: errors})
   }
 
-  buildBoard() {
-    let board = new Matrix()
+  generate() {
+    this.state.board.initialize()
+    this.setState({board: this.state.board})
+  }
 
-    for (let i = 0; i < 1000; i++) {
+  shuffle() {
+    let board = this.state.board
+
+    for (let i = 0; i < 100000; i++) {
       switch (Math.floor(Math.random() * 7)) {
         case 0:
           board.rotate()
@@ -124,10 +151,10 @@ export default class Sudoku extends React.Component<{}, GameState> {
     this.setState({board: board})
   }
 
-  prune() {
-    let board = new Matrix()
+  prune(hints: number) {
+    let board = this.state.board
 
-    for (let i = 9 * 9 - 25; i >= 0; i--) {
+    for (let i = 9 * 9 - hints; i >= 0; i--) {
       let cell = new Coordinate(Math.floor(Math.random() * 9), Math.floor(Math.random() * 9))
       while (board.getValue(cell) === 0) {
         cell = new Coordinate(Math.floor(Math.random() * 9), Math.floor(Math.random() * 9))
@@ -138,39 +165,51 @@ export default class Sudoku extends React.Component<{}, GameState> {
     this.setState({board: board})
   }
 
-  componentDidMount() {
-    this.buildBoard()
-    this.prune()
+  start(hints: number) {
+    this.generate()
+    this.shuffle()
+    this.prune(hints)
+    this.setState({initial: new Date(), playing: true})
+
+    if (!this.state.playing) {
+      setInterval(this.tick, 1000)
+    }
+  }
+
+  registerChange() {
+    this.setState({board: this.state.board})
+    this.checkForErrors()
   }
 
   render() {
+    let minutesNumber = Math.floor(this.state.elapsed / 60)
+    let secondsNumber = Math.floor(this.state.elapsed % 60)
+
+    let seconds = secondsNumber < 10 ? '0' + secondsNumber : secondsNumber
+    let minutes = minutesNumber < 10 ? '0' + minutesNumber : minutesNumber
+
     return (
         <div className={'Sudoku ' + (this.state.dark ? 'dark' : 'light')}>
+
+          {minutes}:{seconds}
+
           <Board
               {...this.state}
               onClick={(coordinate: Coordinate) => this.setState({selected: coordinate})}
           />
-          <button
-              onClick={() => {
-                this.buildBoard()
-              }}
-          >
-            Generate
+          <ValueBar onClick={(value: number) => {
+            if (this.state.selected) {
+              this.state.board.setValue(this.state.selected as unknown as Coordinate, value)
+              this.registerChange()
+            }
+          }}/>
+          <button onClick={() => {
+            this.setState({dark: !this.state.dark})
+          }}> {this.state.dark ? 'Light mode' : 'Dark mode'}
           </button>
-          <button
-              onClick={() => {
-                this.setState({dark: !this.state.dark})
-              }}
-          >
-            {this.state.dark ? 'Light mode' : 'Dark mode'}
-          </button>
-          <button
-              onClick={() => {
-                this.prune()
-              }}
-          >
-            Prune
-          </button>
+          <button onClick={() => this.start(65)}> New easy</button>
+          <button onClick={() => this.start(45)}> New medium</button>
+          <button onClick={() => this.start(25)}> New hard</button>
         </div>
     )
   }
