@@ -140,12 +140,12 @@ export default class Sudoku extends React.Component<{}, GameState> {
 
   componentDidMount() {
     this.buildBoard()
-    this.checkForErrors()
+    this.prune()
   }
 
   render() {
     return (
-        <div className='Sudoku' style={{background: this.state.dark ? 'black' : 'white'}}>
+        <div className={'Sudoku ' + (this.state.dark ? 'dark' : 'light')}>
           <Board
               {...this.state}
               onClick={(coordinate: Coordinate) => this.setState({selected: coordinate})}

@@ -8,3 +8,12 @@
   justify-content: center;
 }
 
+.dark {
+  color: white;
+  background: black;
+}
+
+.light {
+  color: black;
+  background: white;
+}

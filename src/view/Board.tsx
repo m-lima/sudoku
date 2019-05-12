@@ -13,18 +13,13 @@ interface ClusterProps extends Props {
 }
 
 type CellProps = {
+  dark: boolean
   selected: boolean
   highlighted: boolean
-  // status: CellStatus
   error: boolean
-  dark: boolean
   value: number
   coordinate: Coordinate
   onClick: (coordinate: Coordinate) => void
-}
-
-const getCellBackground = (dark: boolean, selected: boolean, highlighted: boolean) => {
-  return '#' + (dark ? 'ffffff' : '555555') + (selected ? '60' : (highlighted ? '30' : '00'))
 }
 
 const isErrorCell = (cell: Coordinate, errors: Coordinate[]) => {
@@ -36,25 +31,30 @@ const isErrorCell = (cell: Coordinate, errors: Coordinate[]) => {
   return false
 }
 
-const Cell = ({selected, highlighted, error, dark, value, coordinate, onClick}: CellProps) =>
+const buildCellClass = (dark: boolean, selected: boolean, highlighted: boolean, error: boolean) => {
+  let className = 'Board-cell'
+  className += dark ? ' dark' : ' light'
+  if (selected) className += ' selected'
+  if (highlighted) className += ' highlighted'
+  if (error) className += ' error'
+  return className
+}
+
+const Cell = ({dark, selected, highlighted, error, value, coordinate, onClick}: CellProps) =>
     <div
-        className='Board-cell'
-        style={{
-          background: getCellBackground(dark, selected, highlighted),
-          color: error ? 'red' : (dark ? 'white' : 'black'),
-        }}
+        className={buildCellClass(dark, selected, highlighted, error)}
         onClick={() => onClick(coordinate)}
     >
       {value > 0 && value}
     </div>
 
 const Cluster = ({board, errors, selected, dark, onClick, index}: ClusterProps) =>
-    <div className='Board-cluster' style={{borderColor: dark ? 'white' : 'black'}}>
+    <div className='Board-cluster'>
       {Array.from(Array(9)).map((v, i) => {
         let cell = new Coordinate(index.row * 3 + Math.floor(i / 3), index.column * 3 + (i % 3))
         return <Cell
             key={i}
-            selected={selected !== undefined && board.getValue(selected) !== 0 && board.getValue(selected) ===  board.getValue(cell)}
+            selected={selected !== undefined && board.getValue(selected) !== 0 && board.getValue(selected) === board.getValue(cell)}
             highlighted={selected !== undefined && (cell.row === selected.row || cell.column === selected.column)}
             error={isErrorCell(cell, errors)}
             dark={dark}
@@ -66,9 +66,7 @@ const Cluster = ({board, errors, selected, dark, onClick, index}: ClusterProps) 
     </div>
 
 const Board: React.FC<Props> = (props) =>
-    <div className='Board' style={{
-      background: props.dark ? 'black' : 'white'
-    }}>
+    <div className='Board'>
       {Array.from(Array(9)).map((v, i) =>
           <Cluster key={i} {...props} index={new Coordinate(Math.floor(i / 3), i % 3)}/>
       )}

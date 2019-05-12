@@ -49,3 +49,23 @@
   font-size: calc(80vmin / 16);
   font-weight: bold;
 }
+
+.Board-cell.error {
+  color: red;
+}
+
+.Board-cell.dark.highlighted {
+  background: #333333;
+}
+
+.Board-cell.light.highlighted {
+  background: #eeeeee;
+}
+
+.Board-cell.dark.selected {
+  background: #555555;
+}
+
+.Board-cell.light.selected {
+  background: #cccccc;
+}
