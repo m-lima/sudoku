@@ -24,7 +24,7 @@ type CellProps = {
 }
 
 const getCellBackground = (dark: boolean, selected: boolean, highlighted: boolean) => {
-  return '#' + (dark ? 'ffffff' : '000000') + (selected ? '60' : (highlighted ? '30' : '00'))
+  return '#' + (dark ? 'ffffff' : '555555') + (selected ? '60' : (highlighted ? '30' : '00'))
 }
 
 const isErrorCell = (cell: Coordinate, errors: Coordinate[]) => {
@@ -54,7 +54,7 @@ const Cluster = ({board, errors, selected, dark, onClick, index}: ClusterProps) 
         let cell = new Coordinate(index.row * 3 + Math.floor(i / 3), index.column * 3 + (i % 3))
         return <Cell
             key={i}
-            selected={selected !== undefined && cell.equals(selected)}
+            selected={selected !== undefined && board.getValue(selected) !== 0 && board.getValue(selected) ===  board.getValue(cell)}
             highlighted={selected !== undefined && (cell.row === selected.row || cell.column === selected.column)}
             error={isErrorCell(cell, errors)}
             dark={dark}

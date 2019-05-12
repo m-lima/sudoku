@@ -1,7 +1,7 @@
 import Coordinate from './Coordinate'
 
 export default class Matrix {
-  board: number[]
+  private board: number[]
 
   constructor() {
     this.board = [

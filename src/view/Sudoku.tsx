@@ -124,19 +124,26 @@ export default class Sudoku extends React.Component<{}, GameState> {
     this.setState({board: board})
   }
 
+  prune() {
+    let board = new Matrix()
+
+    for (let i = 9 * 9 - 25; i >= 0; i--) {
+      let cell = new Coordinate(Math.floor(Math.random() * 9), Math.floor(Math.random() * 9))
+      while (board.getValue(cell) === 0) {
+        cell = new Coordinate(Math.floor(Math.random() * 9), Math.floor(Math.random() * 9))
+      }
+      board.setValue(cell, 0)
+    }
+
+    this.setState({board: board})
+  }
+
   componentDidMount() {
     this.buildBoard()
     this.checkForErrors()
   }
 
-  registerUpdate() {
-    this.setState({board: this.state.board})
-    this.checkForErrors()
-  }
-
   render() {
-    let index1 = Math.floor(Math.random() * 3)
-    let index2 = Math.floor(Math.random() * 3)
     return (
         <div className='Sudoku' style={{background: this.state.dark ? 'black' : 'white'}}>
           <Board
@@ -145,74 +152,24 @@ export default class Sudoku extends React.Component<{}, GameState> {
           />
           <button
               onClick={() => {
-                this.buildBoard();
+                this.buildBoard()
               }}
           >
             Generate
           </button>
           <button
               onClick={() => {
-                this.state.board.reverse();
-                this.registerUpdate()
+                this.setState({dark: !this.state.dark})
               }}
           >
-            Reverse
+            {this.state.dark ? 'Light mode' : 'Dark mode'}
           </button>
           <button
               onClick={() => {
-                this.state.board.mirrowRows();
-                this.registerUpdate()
+                this.prune()
               }}
           >
-            Mirror Rows
-          </button>
-          <button
-              onClick={() => {
-                this.state.board.mirrorColumns();
-                this.registerUpdate()
-              }}
-          >
-            Mirror Columns
-          </button>
-          <button
-              onClick={() => {
-                this.state.board.rotate();
-                this.registerUpdate()
-              }}
-          >
-            Rotate
-          </button>
-          <button
-              onClick={() => {
-                this.state.board.swapRows(index1, index2);
-                this.registerUpdate()
-              }}
-          >
-            Swap Row {index1 + ':' + index2}
-          </button>
-          <button
-              onClick={() => {
-                this.state.board.swapColumns(index1, index2);
-                this.registerUpdate()
-              }}
-          >
-            Swap Column {index1 + ':' + index2}
-          </button>
-          <button
-              onClick={() => {
-                this.state.board.swapRowClusters(index1);
-                this.registerUpdate()
-              }}
-          >
-            Swap Row Cluster {index1}
-          </button>
-          <button
-              onClick={() => {
-                this.state.board.swapColumnClusters(index1);
-                this.registerUpdate()
-              }}
-          >
-            Swap Column Cluster {index1}
+            Prune
           </button>
         </div>
     )
