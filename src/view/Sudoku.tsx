@@ -18,6 +18,8 @@ export default class Sudoku extends React.Component<{}, SudokuState> {
 
   state = {
     board: new Matrix(),
+    pruned: new Matrix(),
+    solution: new Matrix(),
     notes: [[[]]],
     errors: [],
     selected: undefined,
@@ -114,65 +116,63 @@ export default class Sudoku extends React.Component<{}, SudokuState> {
     this.setState({errors: errors})
   }
 
-  generate() {
-    this.state.board.initialize()
-    this.setState({board: this.state.board})
-  }
-
-  shuffle() {
-    let board = this.state.board
-
-    for (let i = 0; i < 100000; i++) {
-      switch (Math.floor(Math.random() * 7)) {
-        case 0:
-          board.rotate()
-          break
-        case 1:
-          board.mirrowRows()
-          break
-        case 2:
-          board.mirrorColumns()
-          break
-        case 3:
-          board.swapRows(Math.floor(Math.random() * 3), Math.floor(Math.random() * 3))
-          break
-        case 4:
-          board.swapColumns(Math.floor(Math.random() * 3), Math.floor(Math.random() * 3))
-          break
-        case 5:
-          board.swapRowClusters(Math.floor(Math.random() * 3))
-          break
-        case 6:
-          board.swapColumnClusters(Math.floor(Math.random() * 3))
-          break
-      }
-    }
-
-    this.setState({board: board})
-  }
-
-  prune(hints: number) {
-    let board = this.state.board
-
-    for (let i = 9 * 9 - hints; i >= 0; i--) {
-      let cell = new Coordinate(Math.floor(Math.random() * 9), Math.floor(Math.random() * 9))
-      while (board.getValue(cell) === 0) {
-        cell = new Coordinate(Math.floor(Math.random() * 9), Math.floor(Math.random() * 9))
-      }
-      board.setValue(cell, 0)
-    }
-
-    this.setState({board: board})
-  }
-
   start(hints: number) {
-    this.generate()
-    this.shuffle()
-    this.prune(hints)
-    this.setState({initial: new Date(), playing: true})
+    let solution = new Matrix()
+    this.shuffle(solution)
+
+    let pruned = solution.clone()
+    this.prune(solution, hints)
+
+    let board = pruned.clone()
+
+    this.setState({
+      board: board,
+      pruned: pruned,
+      solution: solution,
+      initial: new Date(),
+      playing: true,
+    })
 
     if (!this.state.playing) {
       setInterval(this.tick, 1000)
+    }
+  }
+
+  shuffle(matrix: Matrix) {
+    for (let i = 0; i < 100000; i++) {
+      switch (Math.floor(Math.random() * 7)) {
+        case 0:
+          matrix.rotate()
+          break
+        case 1:
+          matrix.mirrowRows()
+          break
+        case 2:
+          matrix.mirrorColumns()
+          break
+        case 3:
+          matrix.swapRows(Math.floor(Math.random() * 3), Math.floor(Math.random() * 3))
+          break
+        case 4:
+          matrix.swapColumns(Math.floor(Math.random() * 3), Math.floor(Math.random() * 3))
+          break
+        case 5:
+          matrix.swapRowClusters(Math.floor(Math.random() * 3))
+          break
+        case 6:
+          matrix.swapColumnClusters(Math.floor(Math.random() * 3))
+          break
+      }
+    }
+  }
+
+  prune(matrix: Matrix, hints: number) {
+    for (let i = 9 * 9 - hints; i >= 0; i--) {
+      let cell = new Coordinate(Math.floor(Math.random() * 9), Math.floor(Math.random() * 9))
+      while (matrix.getValue(cell) === 0) {
+        cell = new Coordinate(Math.floor(Math.random() * 9), Math.floor(Math.random() * 9))
+      }
+      matrix.setValue(cell, 0)
     }
   }
 
@@ -198,7 +198,7 @@ export default class Sudoku extends React.Component<{}, SudokuState> {
               onClick={(coordinate: Coordinate) => this.setState({selected: coordinate})}
           />
           <ValueBar onClick={(value: number) => {
-            if (this.state.selected) {
+            if (this.state.selected && this.state.pruned.getValue(this.state.selected as unknown as Coordinate) === 0) {
               this.state.board.setValue(this.state.selected as unknown as Coordinate, value)
               this.registerChange()
             }

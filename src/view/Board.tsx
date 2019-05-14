@@ -17,6 +17,7 @@ type CellProps = {
   selected: boolean
   highlighted: boolean
   error: boolean
+  locked: boolean
   value: number
   coordinate: Coordinate
   onClick: (coordinate: Coordinate) => void
@@ -31,24 +32,25 @@ const isErrorCell = (cell: Coordinate, errors: Coordinate[]) => {
   return false
 }
 
-const buildCellClass = (dark: boolean, selected: boolean, highlighted: boolean, error: boolean) => {
+const buildCellClass = (dark: boolean, selected: boolean, highlighted: boolean, error: boolean, locked: boolean) => {
   let className = 'Board-cell'
   className += dark ? ' dark' : ' light'
+  if (locked) className += ' locked'
   if (selected) className += ' selected'
   if (highlighted) className += ' highlighted'
   if (error) className += ' error'
   return className
 }
 
-const Cell = ({dark, selected, highlighted, error, value, coordinate, onClick}: CellProps) =>
+const Cell = ({dark, selected, highlighted, error, locked, value, coordinate, onClick}: CellProps) =>
     <div
-        className={buildCellClass(dark, selected, highlighted, error)}
+        className={buildCellClass(dark, selected, highlighted, error, locked)}
         onClick={() => onClick(coordinate)}
     >
       {value > 0 && value}
     </div>
 
-const Cluster = ({board, errors, selected, dark, onClick, index}: ClusterProps) =>
+const Cluster = ({board, pruned, errors, selected, dark, onClick, index}: ClusterProps) =>
     <div className='Board-cluster'>
       {Array.from(Array(9)).map((v, i) => {
         let cell = new Coordinate(index.row * 3 + Math.floor(i / 3), index.column * 3 + (i % 3))
@@ -57,6 +59,7 @@ const Cluster = ({board, errors, selected, dark, onClick, index}: ClusterProps) 
             selected={selected !== undefined && (selected.equals(cell) || (board.getValue(selected) !== 0 && board.getValue(selected) === board.getValue(cell)))}
             highlighted={selected !== undefined && (cell.row === selected.row || cell.column === selected.column)}
             error={isErrorCell(cell, errors)}
+            locked={pruned.getValue(cell) !== 0}
             dark={dark}
             value={board.getValue(cell)}
             coordinate={cell}

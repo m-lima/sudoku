@@ -3,18 +3,22 @@ import Coordinate from './Coordinate'
 export default class Matrix {
   private board: number[]
 
-  constructor() {
-    this.board = [
-      0, 0, 0, 0, 0, 0, 0, 0, 0,
-      0, 0, 0, 0, 0, 0, 0, 0, 0,
-      0, 0, 0, 0, 0, 0, 0, 0, 0,
-      0, 0, 0, 0, 0, 0, 0, 0, 0,
-      0, 0, 0, 0, 0, 0, 0, 0, 0,
-      0, 0, 0, 0, 0, 0, 0, 0, 0,
-      0, 0, 0, 0, 0, 0, 0, 0, 0,
-      0, 0, 0, 0, 0, 0, 0, 0, 0,
-      0, 0, 0, 0, 0, 0, 0, 0, 0,
-    ]
+  constructor(matrix?: Matrix) {
+    if (matrix) {
+      this.board = Array.from(matrix.board)
+    } else {
+      this.board = [
+        0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0,
+        0, 0, 0, 0, 0, 0, 0, 0, 0,
+      ]
+    }
   }
 
   initialize() {
@@ -29,6 +33,10 @@ export default class Matrix {
       6, 7, 8, 9, 1, 2, 3, 4, 5,
       9, 1, 2, 3, 4, 5, 6, 7, 8,
     ]
+  }
+
+  clone() {
+    return new Matrix(this)
   }
 
   getRow(index: number): number[] {
