@@ -2,7 +2,7 @@ import React from 'react'
 import './css/Board.css'
 
 import Coordinate from '../model/Coordinate'
-import GameState from '../model/GameState'
+import GameState, { Mode } from '../model/GameState'
 
 interface Props extends GameState {
   onClick: (coordinate: Coordinate) => void
@@ -18,6 +18,7 @@ type CellProps = {
   highlighted: boolean
   error: boolean
   locked: boolean
+  victory: boolean
   value: number
   coordinate: Coordinate
   onClick: (coordinate: Coordinate) => void
@@ -32,7 +33,11 @@ const isErrorCell = (cell: Coordinate, errors: Coordinate[]) => {
   return false
 }
 
-const buildCellClass = (dark: boolean, selected: boolean, highlighted: boolean, error: boolean, locked: boolean) => {
+const buildCellClass = (dark: boolean, selected: boolean, highlighted: boolean, error: boolean, locked: boolean, victory: boolean) => {
+  if (victory) {
+    return 'Board-cell victory'
+  }
+
   let className = 'Board-cell'
   className += dark ? ' dark' : ' light'
   if (locked) className += ' locked'
@@ -42,31 +47,33 @@ const buildCellClass = (dark: boolean, selected: boolean, highlighted: boolean, 
   return className
 }
 
-const Cell = ({dark, selected, highlighted, error, locked, value, coordinate, onClick}: CellProps) =>
+const Cell = ({dark, selected, highlighted, error, locked, victory, value, coordinate, onClick}: CellProps) =>
     <div
-        className={buildCellClass(dark, selected, highlighted, error, locked)}
+        className={buildCellClass(dark, selected, highlighted, error, locked, victory)}
         onClick={() => onClick(coordinate)}
     >
       {value > 0 && value}
     </div>
 
-const Cluster = ({board, pruned, errors, selected, dark, onClick, index}: ClusterProps) =>
-    <div className='Board-cluster'>
-      {Array.from(Array(9)).map((v, i) => {
-        let cell = new Coordinate(index.row * 3 + Math.floor(i / 3), index.column * 3 + (i % 3))
-        return <Cell
-            key={i}
-            selected={selected !== undefined && (selected.equals(cell) || (board.getValue(selected) !== 0 && board.getValue(selected) === board.getValue(cell)))}
-            highlighted={selected !== undefined && (cell.row === selected.row || cell.column === selected.column)}
-            error={isErrorCell(cell, errors)}
-            locked={pruned.getValue(cell) !== 0}
-            dark={dark}
-            value={board.getValue(cell)}
-            coordinate={cell}
-            onClick={onClick}
-        />
-      })}
-    </div>
+const Cluster = ({board, pruned, errors, selected, dark, mode, onClick, index}: ClusterProps) => {
+  return <div className='Board-cluster'>
+    {Array.from(Array(9)).map((v, i) => {
+      let cell = new Coordinate(index.row * 3 + Math.floor(i / 3), index.column * 3 + (i % 3))
+      return <Cell
+          key={i}
+          selected={selected !== undefined && (selected.equals(cell) || (board.getValue(selected) !== 0 && board.getValue(selected) === board.getValue(cell)))}
+          highlighted={selected !== undefined && (cell.row === selected.row || cell.column === selected.column)}
+          error={isErrorCell(cell, errors)}
+          locked={pruned.getValue(cell) !== 0}
+          victory={mode === Mode.VICTORY}
+          dark={dark}
+          value={board.getValue(cell)}
+          coordinate={cell}
+          onClick={onClick}
+      />
+    })}
+  </div>
+}
 
 const Board: React.FC<Props> = (props) =>
     <div className='Board'>

@@ -5,11 +5,10 @@ import Board from './Board'
 import ValueBar from './ValueBar'
 
 import Coordinate from '../model/Coordinate'
-import GameState from '../model/GameState'
+import GameState, {Mode} from '../model/GameState'
 import Matrix from '../model/Matrix';
 
 interface SudokuState extends GameState {
-  playing: boolean,
   initial: Date,
   elapsed: number;
 }
@@ -24,7 +23,7 @@ export default class Sudoku extends React.Component<{}, SudokuState> {
     errors: [],
     selected: undefined,
     dark: false,
-    playing: false,
+    mode: Mode.NEW,
     initial: new Date(),
     elapsed: 0,
   }
@@ -35,7 +34,7 @@ export default class Sudoku extends React.Component<{}, SudokuState> {
   }
 
   tick() {
-    if (this.state.playing) {
+    if (this.state.mode === Mode.PLAYING) {
       this.setState({elapsed: (new Date().valueOf() - this.state.initial.valueOf()) / 1000})
     }
   }
@@ -118,28 +117,29 @@ export default class Sudoku extends React.Component<{}, SudokuState> {
 
   start(hints: number) {
     let solution = new Matrix()
+    solution.initialize()
     this.shuffle(solution)
 
     let pruned = solution.clone()
-    this.prune(solution, hints)
+    this.prune(pruned, hints)
 
     let board = pruned.clone()
+
+    if (this.state.mode === Mode.NEW) {
+      setInterval(this.tick, 1000)
+    }
 
     this.setState({
       board: board,
       pruned: pruned,
       solution: solution,
+      mode: Mode.PLAYING,
       initial: new Date(),
-      playing: true,
     })
-
-    if (!this.state.playing) {
-      setInterval(this.tick, 1000)
-    }
   }
 
   shuffle(matrix: Matrix) {
-    for (let i = 0; i < 100000; i++) {
+    for (let i = 0; i < 100; i++) {
       switch (Math.floor(Math.random() * 7)) {
         case 0:
           matrix.rotate()
@@ -176,9 +176,17 @@ export default class Sudoku extends React.Component<{}, SudokuState> {
     }
   }
 
+  checkVictory(): boolean {
+    return this.state.board.equals(this.state.solution)
+  }
+
   registerChange() {
     this.setState({board: this.state.board})
     this.checkForErrors()
+
+    if (this.checkVictory()) {
+      this.setState({ mode: Mode.VICTORY })
+    }
   }
 
   render() {

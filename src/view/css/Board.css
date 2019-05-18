@@ -47,15 +47,21 @@
   margin: auto;
 
   font-size: calc(90vmin / 16);
-  font-weight: normal;
+  font-weight: bold;
+
+  color: blue;
 }
 
 .Board-cell.error {
   color: red;
 }
 
-.Board-cell.locked {
-  font-weight: bold;
+.Board-cell.dark.locked {
+  color: white;
+}
+
+.Board-cell.light.locked {
+  color: black;
 }
 
 .Board-cell.dark.highlighted {
@@ -72,4 +78,9 @@
 
 .Board-cell.light.selected {
   background: #cccccc;
+}
+
+.Board-cell.victory {
+  color: green;
+  font-weight: bold;
 }

@@ -35,10 +35,6 @@ export default class Matrix {
     ]
   }
 
-  clone() {
-    return new Matrix(this)
-  }
-
   getRow(index: number): number[] {
     return Array.from(Array(9), (v, i) => this.board[index * 9 + i])
   }
@@ -124,5 +120,35 @@ export default class Matrix {
     let temp = this.getColumn(index1)
     this.setColumn(index1, this.getColumn(index2))
     this.setColumn(index2, temp)
+  }
+
+  clone() {
+    return new Matrix(this)
+  }
+
+  equals(other: Matrix) {
+    for (let i = 0; i < this.board.length; i++) {
+      if (this.board[i] !== other.board[i]) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  toString() {
+    return '|' + this.board.reduce((s, v, i, a) => {
+      if (i > 0) {
+        if (i % 3 === 0) {
+          s += ' |'
+        }
+
+        if (i % 9 === 0) {
+          s += '\n|'
+        }
+      }
+
+      return s + ' ' + a[i]
+    }, '') + ' |'
   }
 }
