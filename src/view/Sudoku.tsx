@@ -185,7 +185,7 @@ export default class Sudoku extends React.Component<{}, SudokuState> {
     this.checkForErrors()
 
     if (this.checkVictory()) {
-      this.setState({ mode: Mode.VICTORY })
+      this.setState({mode: Mode.VICTORY})
     }
   }
 

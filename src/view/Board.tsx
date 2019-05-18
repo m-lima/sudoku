@@ -2,7 +2,7 @@ import React from 'react'
 import './css/Board.css'
 
 import Coordinate from '../model/Coordinate'
-import GameState, { Mode } from '../model/GameState'
+import GameState, {Mode} from '../model/GameState'
 
 interface Props extends GameState {
   onClick: (coordinate: Coordinate) => void

@@ -5,7 +5,7 @@ type ValueBarProps = {
   onClick: (value: number) => void
 }
 
-const ValueBar: React.FC<ValueBarProps> = ({ onClick }: ValueBarProps) =>
+const ValueBar: React.FC<ValueBarProps> = ({onClick}: ValueBarProps) =>
     <div className='ValueBar'>
       <span className='ValueBar-button' onClick={() => onClick(0)}></span>
       <span className='ValueBar-button' onClick={() => onClick(1)}>1</span>
