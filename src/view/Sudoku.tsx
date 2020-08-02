@@ -14,23 +14,46 @@ interface SudokuState extends GameState {
 }
 
 const prune = (matrix: Matrix, hints: number) => {
+  let blacklist: Coordinate[] = []
   for (let i = 9 * 9 - hints; i >= 0; i--) {
     while(true) {
-      let cell = getRandomCell(matrix)
+
+      let cell: Coordinate
+      do {
+        cell = new Coordinate(Math.floor(Math.random() * 9), Math.floor(Math.random() * 9))
+      } while (blacklist.includes(cell) || matrix.getValue(cell) === 0)
+
+      let previous = matrix.getValue(cell)
       matrix.setValue(cell, 0)
-      if (solvable(matrix)) {
+
+      if (multipleSolutions(matrix, cell, previous)) {
+        matrix.setValue(cell, previous)
+        blacklist.push(cell)
+      } else {
         break
       }
     }
   }
 }
 
-const getRandomCell = (matrix: Matrix) => {
-  let cell: Coordinate
-  do {
-    cell = new Coordinate(Math.floor(Math.random() * 9), Math.floor(Math.random() * 9))
-  } while (matrix.getValue(cell) === 0)
-  return cell
+const multipleSolutions = (matrix: Matrix, cell: Coordinate, value: number) => {
+  for (let i = 0; i < 9 * 9; i++) {
+    // Skip the number that we just removed
+    if (i === value) {
+      continue
+    }
+
+    let newMatrix = matrix.clone()
+    newMatrix.setValue(cell, i)
+
+    // Check if we have multiple solutions
+    if (solvable(newMatrix)) {
+      return true
+    }
+  }
+
+  // So far we have only one solution
+  return false
 }
 
 const solvable = (matrix: Matrix) => {

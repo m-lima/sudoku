@@ -85,6 +85,6 @@
 }
 
 .Board-cell.victory {
-  color: green;
+  color: #60ff60;
   font-weight: bold;
 }
