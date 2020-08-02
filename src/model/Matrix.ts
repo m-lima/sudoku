@@ -21,6 +21,11 @@ export default class Matrix {
     }
   }
 
+  from(board: number[]) {
+    this.board = board
+    return this
+  }
+
   initialize() {
     this.board = [
       1, 2, 3, 4, 5, 6, 7, 8, 9,
@@ -150,5 +155,15 @@ export default class Matrix {
 
       return s + ' ' + a[i]
     }, '') + ' |'
+  }
+
+  print() {
+    return this.board.reduce((s, v, i, a) => {
+      if (i > 0) {
+        return s + ',' + (a[i] > 0 ? a[i] : ' ')
+      } else {
+        return s + (a[i] > 0 ? a[i] : ' ')
+      }
+    }, '[') + ']'
   }
 }

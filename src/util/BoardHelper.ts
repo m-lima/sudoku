@@ -43,28 +43,37 @@ export const prune = (matrix: Matrix, difficulty: Difficulty) => {
   let end = difficultyToSize(difficulty)
 
   // How many were removed effectively
-  let removed = removeObvious(matrix, cells)
+  let removed = 0//removeObvious(matrix, cells)
 
-  let knownValid = [ matrix.clone() ]
+  let emptyCells: Coordinate[] = []
 
-  for (let i = 0; i < 81 && removed < end; i++) {
+  for (let i = 0; removed < end; i++) {
     let cell = new Coordinate(cells[i] % 9, Math.floor(cells[i] / 9))
+    let value = matrix.getValue(cell)
 
     // Was already obviously removed
-    if (matrix.getValue(cell) === 0) {
+    if (value === 0) {
       continue
     }
 
     // Clear the cell and save the preivous value
-    let previous = matrix.getValue(cell)
+    // console.log('=====')
+    // console.log(matrix.print())
+    // console.log(`Checking if can remove: ${cell.column}, ${cell.row}: ${matrix.getValue(cell)}`)
     matrix.setValue(cell, 0)
+    // console.log(matrix.print())
 
     // Does this break the game?
     // If so, undo and pretend nothing happened
-    if (multipleSolutions(matrix, cell, previous, knownValid)) {
-      matrix.setValue(cell, previous)
+    if (multipleSolutions(matrix, cell, value, emptyCells)) {
+      // console.log('Should not remove this guy')
+      matrix.setValue(cell, value)
     } else {
+      // console.log('Removed someone')
+      matrix.setValue(cell, 0)
+      emptyCells.push(cell)
       removed++
+      console.log(`Already removed ${removed} cells`)
     }
   }
   console.log(`Removed ${removed} cells`)
@@ -95,90 +104,59 @@ const difficultyToSize = (difficulty: Difficulty) => {
   return 81
 }
 
-const removeObvious = (matrix: Matrix, cells: number[]) => {
-  let removed = 0
+// const removeObvious = (matrix: Matrix, cells: number[]) => {
+//   let removed = 0
 
-  for (let i = 0; i < 81; i++) {
-    let cell = new Coordinate(cells[i] % 9, Math.floor(cells[i] / 9))
+//   for (let i = 0; i < 81; i++) {
+//     let cell = new Coordinate(cells[i] % 9, Math.floor(cells[i] / 9))
 
-    // Save the preivous value
-    let previous = matrix.getValue(cell)
+//     // Save the preivous value
+//     let previous = matrix.getValue(cell)
 
-    let stillValid = false
-    for (let value = 1; value < 10; value++) {
-      if (value === previous) {
-        continue
-      }
+//     let stillValid = false
+//     for (let value = 1; value < 10; value++) {
+//       if (value === previous) {
+//         continue
+//       }
 
-      matrix.setValue(cell, value)
-      if (isValid(matrix, cell)) {
-        stillValid = true
-        break
-      }
-    }
+//       matrix.setValue(cell, value)
+//       if (isValid(matrix, cell)) {
+//         stillValid = true
+//         break
+//       }
+//     }
 
-    if (stillValid) {
-      matrix.setValue(cell, previous)
-    } else {
-      matrix.setValue(cell, 0)
-      removed++
-    }
+//     if (stillValid) {
+//       matrix.setValue(cell, previous)
+//     } else {
+//       matrix.setValue(cell, 0)
+//       removed++
+//     }
+//   }
+
+//   return removed
+// }
+
+const multipleSolutions = (matrix: Matrix, cell: Coordinate, value: number, emptyCells: Coordinate[]) => {
+
+  // Theres no where to play, so no multiple solution
+  if (emptyCells.length === 0) {
+    return false
   }
 
-  return removed
-}
-
-const addObvious = (matrix: Matrix) => {
-  let added = false
-  for (let i = 0; i < 81; i++) {
-    let cell = new Coordinate(i % 9, Math.floor(i / 9))
-
-    if (matrix.getValue(cell) !== 0) {
-      continue
-    }
-
-    let obviousOption = 0
-    for (let value = 1; value < 10; value++) {
-      matrix.setValue(cell, value)
-      if (isValid(matrix, cell)) {
-        if (obviousOption === 0) {
-          // Mark this as a candidate for adding
-          obviousOption = value
-        } else {
-          // This is a second candidate!
-          // Clear the previous candidate and break away
-          obviousOption = 0
-          break
-        }
-      }
-    }
-
-    matrix.setValue(cell, obviousOption)
-
-    if (obviousOption !== 0) {
-      added = true
-    }
-  }
-
-  if (added) {
-    addObvious(matrix)
-  }
-}
-
-const multipleSolutions = (matrix: Matrix, cell: Coordinate, value: number, knownValid: Matrix[]) => {
   for (let i = 1; i < 10; i++) {
     // Skip the number that we just removed
     if (i === value) {
       continue
     }
 
-    let newMatrix = matrix.clone()
-    newMatrix.setValue(cell, i)
+    matrix.setValue(cell, i)
 
-    addObvious(newMatrix)
-    if (solvable(newMatrix, knownValid)) {
-      console.log('Adding known solvable state')
-      knownValid.push(matrix)
+    if (!isValid(matrix, cell)) {
+      continue
+    }
+
+    if (solvable(matrix, emptyCells, 0)) {
       return true
     }
   }
@@ -187,39 +165,47 @@ const multipleSolutions = (matrix: Matrix, cell: Coordinate, value: number, know
   return false
 }
 
-const solvable = (matrix: Matrix, knownValid: Matrix[]) => {
-  if (isKnownValid(matrix, knownValid)) {
-    console.log('I reached a state known to be solvable')
+const solvable = (matrix: Matrix, emptyCells: Coordinate[], index: number) => {
+  if (index === emptyCells.length) {
+    console.log('Solution:')
+    console.log(matrix.print())
     return true
   }
 
-  for (let row = 0; row < 9; row++) {
-    for (let column = 0; column < 9; column++) {
-      let cell = new Coordinate(row, column)
+  let cell = emptyCells[index]
+  for (let value = 1; value < 10; value++) {
+    matrix.setValue(cell, value)
 
-      // Skip non-empty cell
-      if (matrix.getValue(cell) !== 0) {
-        continue
-      }
+    if (!isValid(matrix, cell)) {
+      continue
+    }
 
-      for (let value = 1; value < 10; value++) {
-        matrix.setValue(cell, value)
-        if (isValid(matrix, cell)) {
-          if (solvable(matrix, knownValid)) {
-            return true
-          }
-        }
-      }
-
+    if (solvable(matrix, emptyCells, index + 1)) {
       matrix.setValue(cell, 0)
+      return true
     }
   }
 
+  matrix.setValue(cell, 0)
   return false
 }
 
-const isKnownValid = (matrix: Matrix, knownValid: Matrix[]) => {
-  return knownValid.find(current => current.equals(matrix)) !== undefined
+export const canSolve = (matrix: Matrix) => {
+  let emptyCells: Coordinate[] = []
+
+  for (let row = 0; row < 9; row++) {
+    for (let column = 0; column < 9; column++) {
+      let emptyCell = new Coordinate(row, column)
+
+      if (matrix.getValue(emptyCell) === 0) {
+        emptyCells.push(emptyCell)
+      }
+    }
+  }
+
+  if (solvable(matrix, emptyCells, 0)) {
+    console.log('Sovable')
+  }
 }
 
 const checkRow = (matrix: Matrix, cell: Coordinate) => {

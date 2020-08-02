@@ -81,6 +81,16 @@ export default class Sudoku extends React.Component<{}, SudokuState> {
       mode: Mode.PLAYING,
       initial: new Date(),
     })
+
+    /* let board = new Matrix().from([3,4,5,2,9,1,8,6,7,9,1,2,8,6,7,5,3,4,6,7,8,5,3,4,2,9,1,7,8,9,6,4,5,3,1,1,1,2,3,9,7,8,6,4,5,4,5,6,3,1,2,9,7,8,2,3,4,1,8,9,7,5,6,8,9,1,7,5,6,4,2,3,5,6,7,4,2,3,1,8,9]) */
+    /* this.setState({ */
+    /*   board: board, */
+    /*   pruned: new Matrix(), */
+    /*   solution: new Matrix(), */
+    /*   mode: Mode.PLAYING, */
+    /*   initial: new Date(), */
+    /* }) */
+    /* this.checkForErrors() */
   }
 
   checkVictory(): boolean {
@@ -121,11 +131,15 @@ export default class Sudoku extends React.Component<{}, SudokuState> {
           <span>
             <button onClick={() => {
               this.setState({dark: !this.state.dark})
-            }}> {this.state.dark ? 'Light mode' : 'Dark mode'}
+            }}>
+              {this.state.dark ? 'Light mode' : 'Dark mode'}
             </button>
-            <button onClick={() => this.start(Difficulty.EASY)}> New easy</button>
-            <button onClick={() => this.start(Difficulty.MEDIUM)}> New medium</button>
-            <button onClick={() => this.start(Difficulty.HARD)}> New hard</button>
+            <button onClick={() => this.start(Difficulty.EASY)}>New easy</button>
+            <button onClick={() => this.start(Difficulty.MEDIUM)}>New medium</button>
+            <button onClick={() => this.start(Difficulty.HARD)}>New hard</button>
+            <button onClick={() => Helper.canSolve(this.state.board)}>Solvable?</button>
+            <button onClick={() => console.log(this.state.board.print())}>Print</button>
+            <button onClick={() => this.checkForErrors()}>Errors</button>
           </span>
         </div>
     )
