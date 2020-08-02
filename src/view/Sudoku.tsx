@@ -88,7 +88,7 @@ const removeObvious = (matrix: Matrix, cells: number[]) => {
       }
 
       matrix.setValue(cell, value)
-      if (checkRow(matrix, cell) && checkColumn(matrix, cell) && checkCluster(matrix, cell)) {
+      if (isValid(matrix, cell)) {
         stillValid = true
         break
       }
@@ -125,9 +125,9 @@ const multipleSolutions = (matrix: Matrix, cell: Coordinate, value: number) => {
 }
 
 const solvable = (matrix: Matrix) => {
-  for (let i = 0; i < 9; i++) {
-    for (let j = 0; j < 9; j++) {
-      let cell = new Coordinate(i, j)
+  for (let row = 0; row < 9; row++) {
+    for (let column = 0; column < 9; column++) {
+      let cell = new Coordinate(row, column)
 
       // Skip non-empty cell
       if (matrix.getValue(cell) !== 0) {
@@ -136,7 +136,7 @@ const solvable = (matrix: Matrix) => {
 
       for (let value = 1; value < 10; value++) {
         matrix.setValue(cell, value)
-        if (checkRow(matrix, cell) && checkColumn(matrix, cell) && checkCluster(matrix, cell)) {
+        if (isValid(matrix, cell)) {
           if (solvable(matrix.clone())) {
             return true
           }
@@ -150,53 +150,57 @@ const solvable = (matrix: Matrix) => {
   return false
 }
 
-const checkRow = (matrix: Matrix, index: Coordinate) => {
-  if (matrix.getValue(index) === 0) {
+const checkRow = (matrix: Matrix, cell: Coordinate) => {
+  if (matrix.getValue(cell) === 0) {
     return true
   }
-  for (let i = new Coordinate(index.row, 0); i.column < 9; i.column++) {
-    if (i.equals(index)) {
+  for (let i = new Coordinate(cell.row, 0); i.column < 9; i.column++) {
+    if (i.equals(cell)) {
       continue
     }
-    if (matrix.getValue(i) === matrix.getValue(index)) {
+    if (matrix.getValue(i) === matrix.getValue(cell)) {
       return false
     }
   }
   return true
 }
 
-const checkColumn = (matrix: Matrix, index: Coordinate) => {
-  if (matrix.getValue(index) === 0) {
+const checkColumn = (matrix: Matrix, cell: Coordinate) => {
+  if (matrix.getValue(cell) === 0) {
     return true
   }
-  for (let i = new Coordinate(0, index.column); i.row < 9; i.row++) {
-    if (i.equals(index)) {
+  for (let i = new Coordinate(0, cell.column); i.row < 9; i.row++) {
+    if (i.equals(cell)) {
       continue
     }
-    if (matrix.getValue(i) === matrix.getValue(index)) {
+    if (matrix.getValue(i) === matrix.getValue(cell)) {
       return false
     }
   }
   return true
 }
 
-const checkCluster = (matrix: Matrix, index: Coordinate) => {
-  if (matrix.getValue(index) === 0) {
+const checkCluster = (matrix: Matrix, cell: Coordinate) => {
+  if (matrix.getValue(cell) === 0) {
     return true
   }
-  for (let i = new Coordinate(Math.floor(index.row / 3) * 3, Math.floor(index.column / 3) * 3);
-       i.row < (Math.floor(index.row / 3) + 1) * 3;
+  for (let i = new Coordinate(Math.floor(cell.row / 3) * 3, Math.floor(cell.column / 3) * 3);
+       i.row < (Math.floor(cell.row / 3) + 1) * 3;
        i.row++) {
-         for (i.column = Math.floor(index.column / 3) * 3; i.column < (Math.floor(index.column / 3) + 1) * 3; i.column++) {
-           if (i.equals(index)) {
+         for (i.column = Math.floor(cell.column / 3) * 3; i.column < (Math.floor(cell.column / 3) + 1) * 3; i.column++) {
+           if (i.equals(cell)) {
              continue
            }
-           if (matrix.getValue(i) === matrix.getValue(index)) {
+           if (matrix.getValue(i) === matrix.getValue(cell)) {
              return false
            }
          }
        }
        return true
+}
+
+const isValid = (matrix: Matrix, cell: Coordinate) => {
+  return checkRow(matrix, cell) && checkColumn(matrix, cell) && checkCluster(matrix, cell)
 }
 
 const shuffle = (matrix: Matrix) => {
@@ -262,15 +266,7 @@ export default class Sudoku extends React.Component<{}, SudokuState> {
         if (this.state.board.getValue(index) === 0) {
           continue
         }
-        if (!checkRow(this.state.board, index)) {
-          errors.push(index)
-          continue
-        }
-        if (!checkColumn(this.state.board, index)) {
-          errors.push(index)
-          continue
-        }
-        if (!checkCluster(this.state.board, index)) {
+        if (!isValid(this.state.board, index)) {
           errors.push(index)
           continue
         }
@@ -338,13 +334,15 @@ export default class Sudoku extends React.Component<{}, SudokuState> {
               this.registerChange()
             }
           }}/>
-          <button onClick={() => {
-            this.setState({dark: !this.state.dark})
-          }}> {this.state.dark ? 'Light mode' : 'Dark mode'}
-          </button>
-          <button onClick={() => this.start(Difficulty.EASY)}> New easy</button>
-          <button onClick={() => this.start(Difficulty.MEDIUM)}> New medium</button>
-          <button onClick={() => this.start(Difficulty.HARD)}> New hard</button>
+          <span>
+            <button onClick={() => {
+              this.setState({dark: !this.state.dark})
+            }}> {this.state.dark ? 'Light mode' : 'Dark mode'}
+            </button>
+            <button onClick={() => this.start(Difficulty.EASY)}> New easy</button>
+            <button onClick={() => this.start(Difficulty.MEDIUM)}> New medium</button>
+            <button onClick={() => this.start(Difficulty.HARD)}> New hard</button>
+          </span>
         </div>
     )
   }
