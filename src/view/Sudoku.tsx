@@ -13,6 +13,99 @@ interface SudokuState extends GameState {
   elapsed: number;
 }
 
+const prune = (matrix: Matrix, hints: number) => {
+  for (let i = 9 * 9 - hints; i >= 0; i--) {
+    while(true) {
+      let cell = getRandomCell(matrix)
+      matrix.setValue(cell, 0)
+      if (solvable(matrix)) {
+        break
+      }
+    }
+  }
+}
+
+const getRandomCell = (matrix: Matrix) => {
+  let cell: Coordinate
+  do {
+    cell = new Coordinate(Math.floor(Math.random() * 9), Math.floor(Math.random() * 9))
+  } while (matrix.getValue(cell) === 0)
+  return cell
+}
+
+const solvable = (matrix: Matrix) => {
+  let solutionFound = false
+  for (let i = 0; i < 9 * 9; i++) {
+    for (let j = 0; j < 9; j++) {
+      let cell = new Coordinate(i % 9, Math.floor(i / 9))
+      if (matrix.getValue(cell) !== 0) {
+        continue
+      }
+
+      matrix.setValue(cell, j)
+      if (checkRow(matrix, cell) && checkColumn(matrix, cell) && checkCluster(matrix, cell)) {
+        matrix.setValue(cell, 0)
+        if (solutionFound) {
+          return false
+        } else {
+          solutionFound = true
+        }
+      }
+    }
+  }
+
+  return solutionFound
+}
+
+const checkRow = (matrix: Matrix, index: Coordinate) => {
+  if (matrix.getValue(index) === 0) {
+    return true
+  }
+  for (let i = new Coordinate(index.row, 0); i.column < 9; i.column++) {
+    if (i.equals(index)) {
+      continue
+    }
+    if (matrix.getValue(i) === matrix.getValue(index)) {
+      return false
+    }
+  }
+  return true
+}
+
+const checkColumn = (matrix: Matrix, index: Coordinate) => {
+  if (matrix.getValue(index) === 0) {
+    return true
+  }
+  for (let i = new Coordinate(0, index.column); i.row < 9; i.row++) {
+    if (i.equals(index)) {
+      continue
+    }
+    if (matrix.getValue(i) === matrix.getValue(index)) {
+      return false
+    }
+  }
+  return true
+}
+
+const checkCluster = (matrix: Matrix, index: Coordinate) => {
+  if (matrix.getValue(index) === 0) {
+    return true
+  }
+  for (let i = new Coordinate(Math.floor(index.row / 3) * 3, Math.floor(index.column / 3) * 3);
+       i.row < (Math.floor(index.row / 3) + 1) * 3;
+       i.row++) {
+         for (i.column = Math.floor(index.column / 3) * 3; i.column < (Math.floor(index.column / 3) + 1) * 3; i.column++) {
+           if (i.equals(index)) {
+             continue
+           }
+           if (matrix.getValue(i) === matrix.getValue(index)) {
+             return false
+           }
+         }
+       }
+       return true
+}
+
 export default class Sudoku extends React.Component<{}, SudokuState> {
 
   state = {
@@ -39,55 +132,6 @@ export default class Sudoku extends React.Component<{}, SudokuState> {
     }
   }
 
-  checkRow(index: Coordinate) {
-    if (this.state.board.getValue(index) === 0) {
-      return true
-    }
-    for (let i = new Coordinate(index.row, 0); i.column < 9; i.column++) {
-      if (i.equals(index)) {
-        continue
-      }
-      if (this.state.board.getValue(i) === this.state.board.getValue(index)) {
-        return false
-      }
-    }
-    return true
-  }
-
-  checkColumn(index: Coordinate) {
-    if (this.state.board.getValue(index) === 0) {
-      return true
-    }
-    for (let i = new Coordinate(0, index.column); i.row < 9; i.row++) {
-      if (i.equals(index)) {
-        continue
-      }
-      if (this.state.board.getValue(i) === this.state.board.getValue(index)) {
-        return false
-      }
-    }
-    return true
-  }
-
-  checkCluster(index: Coordinate) {
-    if (this.state.board.getValue(index) === 0) {
-      return true
-    }
-    for (let i = new Coordinate(Math.floor(index.row / 3) * 3, Math.floor(index.column / 3) * 3);
-         i.row < (Math.floor(index.row / 3) + 1) * 3;
-         i.row++) {
-      for (i.column = Math.floor(index.column / 3) * 3; i.column < (Math.floor(index.column / 3) + 1) * 3; i.column++) {
-        if (i.equals(index)) {
-          continue
-        }
-        if (this.state.board.getValue(i) === this.state.board.getValue(index)) {
-          return false
-        }
-      }
-    }
-    return true
-  }
-
   checkForErrors() {
     let errors: Coordinate[] = []
 
@@ -97,15 +141,15 @@ export default class Sudoku extends React.Component<{}, SudokuState> {
         if (this.state.board.getValue(index) === 0) {
           continue
         }
-        if (!this.checkRow(index)) {
+        if (!checkRow(this.state.board, index)) {
           errors.push(index)
           continue
         }
-        if (!this.checkColumn(index)) {
+        if (!checkColumn(this.state.board, index)) {
           errors.push(index)
           continue
         }
-        if (!this.checkCluster(index)) {
+        if (!checkCluster(this.state.board, index)) {
           errors.push(index)
           continue
         }
@@ -121,7 +165,7 @@ export default class Sudoku extends React.Component<{}, SudokuState> {
     this.shuffle(solution)
 
     let pruned = solution.clone()
-    this.prune(pruned, hints)
+    prune(pruned, hints)
 
     let board = pruned.clone()
 
@@ -163,16 +207,6 @@ export default class Sudoku extends React.Component<{}, SudokuState> {
           matrix.swapColumnClusters(Math.floor(Math.random() * 3))
           break
       }
-    }
-  }
-
-  prune(matrix: Matrix, hints: number) {
-    for (let i = 9 * 9 - hints; i >= 0; i--) {
-      let cell = new Coordinate(Math.floor(Math.random() * 9), Math.floor(Math.random() * 9))
-      while (matrix.getValue(cell) === 0) {
-        cell = new Coordinate(Math.floor(Math.random() * 9), Math.floor(Math.random() * 9))
-      }
-      matrix.setValue(cell, 0)
     }
   }
 

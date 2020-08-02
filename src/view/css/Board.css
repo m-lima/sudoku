@@ -49,10 +49,14 @@
   font-size: calc(90vmin / 16);
   font-weight: bold;
 
-  color: blue;
+  color: #6060ff;
 }
 
-.Board-cell.error {
+.Board-cell.dark.error {
+  color: #ff6060;
+}
+
+.Board-cell.light.error {
   color: red;
 }
 
