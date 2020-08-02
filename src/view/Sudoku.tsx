@@ -5,6 +5,7 @@ import Board from './Board'
 import ValueBar from './ValueBar'
 
 import Coordinate from '../model/Coordinate'
+import Difficulty from '../model/Difficulty'
 import GameState, {Mode} from '../model/GameState'
 import Matrix from '../model/Matrix';
 
@@ -13,31 +14,99 @@ interface SudokuState extends GameState {
   elapsed: number;
 }
 
-const prune = (matrix: Matrix, hints: number) => {
-  let blacklist: Coordinate[] = []
-  for (let i = 9 * 9 - hints; i >= 0; i--) {
-    while(true) {
+const prune = (matrix: Matrix, difficulty: Difficulty) => {
 
-      let cell: Coordinate
-      do {
-        cell = new Coordinate(Math.floor(Math.random() * 9), Math.floor(Math.random() * 9))
-      } while (blacklist.includes(cell) || matrix.getValue(cell) === 0)
+  // Generate a random sequence of cells
+  let cells = randomCellSequence()
 
-      let previous = matrix.getValue(cell)
-      matrix.setValue(cell, 0)
+  // How many to remove
+  let end = difficultyToSize(difficulty)
 
-      if (multipleSolutions(matrix, cell, previous)) {
-        matrix.setValue(cell, previous)
-        blacklist.push(cell)
-      } else {
+  let removed = removeObvious(matrix, cells)
+
+  for (let i = 0; i < 81 && removed < end; i++) {
+    let cell = new Coordinate(cells[i] % 9, Math.floor(cells[i] / 9))
+
+    // Was already obviously removed
+    if (matrix.getValue(cell) === 0) {
+      continue
+    }
+
+    // Clear the cell and save the preivous value
+    let previous = matrix.getValue(cell)
+    matrix.setValue(cell, 0)
+
+    // Does this break the game?
+    // If so, undo and pretend nothing happened
+    if (i > 0 && multipleSolutions(matrix, cell, previous)) {
+      matrix.setValue(cell, previous)
+    } else {
+      removed++
+    }
+  }
+  console.log(`Removed ${removed} cells`)
+}
+
+const randomCellSequence = () => {
+  let cells = Array.from(Array(81).keys())
+
+  for (let i = 80; i > 0; i--) {
+    const j: number = Math.floor(Math.random() * (i + 1))
+    const t = cells[j]
+    cells[j] = cells[i]
+    cells[i] = t
+  }
+
+  return cells
+}
+
+const difficultyToSize = (difficulty: Difficulty) => {
+  if (difficulty === Difficulty.EASY) {
+    return 41
+  }
+
+  if (difficulty === Difficulty.MEDIUM) {
+    return 61
+  }
+
+  return 81
+}
+
+const removeObvious = (matrix: Matrix, cells: number[]) => {
+  let removed = 0
+
+  for (let i = 0; i < 81; i++) {
+    let cell = new Coordinate(cells[i] % 9, Math.floor(cells[i] / 9))
+
+    // Save the preivous value
+    let previous = matrix.getValue(cell)
+
+    let stillValid = false
+    for (let value = 1; value < 10; value++) {
+      if (value === previous) {
+        continue
+      }
+
+      matrix.setValue(cell, value)
+      if (checkRow(matrix, cell) && checkColumn(matrix, cell) && checkCluster(matrix, cell)) {
+        stillValid = true
         break
       }
     }
+
+    if (stillValid) {
+      matrix.setValue(cell, previous)
+    } else {
+      matrix.setValue(cell, 0)
+      removed++
+    }
   }
+
+  return removed
 }
 
 const multipleSolutions = (matrix: Matrix, cell: Coordinate, value: number) => {
-  for (let i = 0; i < 9 * 9; i++) {
+  for (let i = 1; i < 10; i++) {
     // Skip the number that we just removed
     if (i === value) {
       continue
@@ -46,7 +115,6 @@ const multipleSolutions = (matrix: Matrix, cell: Coordinate, value: number) => {
     let newMatrix = matrix.clone()
     newMatrix.setValue(cell, i)
 
-    // Check if we have multiple solutions
     if (solvable(newMatrix)) {
       return true
     }
@@ -57,27 +125,29 @@ const multipleSolutions = (matrix: Matrix, cell: Coordinate, value: number) => {
 }
 
 const solvable = (matrix: Matrix) => {
-  let solutionFound = false
-  for (let i = 0; i < 9 * 9; i++) {
+  for (let i = 0; i < 9; i++) {
     for (let j = 0; j < 9; j++) {
-      let cell = new Coordinate(i % 9, Math.floor(i / 9))
+      let cell = new Coordinate(i, j)
+
+      // Skip non-empty cell
       if (matrix.getValue(cell) !== 0) {
         continue
       }
 
-      matrix.setValue(cell, j)
-      if (checkRow(matrix, cell) && checkColumn(matrix, cell) && checkCluster(matrix, cell)) {
-        matrix.setValue(cell, 0)
-        if (solutionFound) {
-          return false
-        } else {
-          solutionFound = true
+      for (let value = 1; value < 10; value++) {
+        matrix.setValue(cell, value)
+        if (checkRow(matrix, cell) && checkColumn(matrix, cell) && checkCluster(matrix, cell)) {
+          if (solvable(matrix.clone())) {
+            return true
+          }
         }
       }
+
+      matrix.setValue(cell, 0)
     }
   }
 
-  return solutionFound
+  return false
 }
 
 const checkRow = (matrix: Matrix, index: Coordinate) => {
@@ -127,6 +197,34 @@ const checkCluster = (matrix: Matrix, index: Coordinate) => {
          }
        }
        return true
+}
+
+const shuffle = (matrix: Matrix) => {
+  for (let i = 0; i < 100; i++) {
+    switch (Math.floor(Math.random() * 7)) {
+      case 0:
+        matrix.rotate()
+      break
+      case 1:
+        matrix.mirrowRows()
+      break
+      case 2:
+        matrix.mirrorColumns()
+      break
+      case 3:
+        matrix.swapRows(Math.floor(Math.random() * 3), Math.floor(Math.random() * 3))
+      break
+      case 4:
+        matrix.swapColumns(Math.floor(Math.random() * 3), Math.floor(Math.random() * 3))
+      break
+      case 5:
+        matrix.swapRowClusters(Math.floor(Math.random() * 3))
+      break
+      case 6:
+        matrix.swapColumnClusters(Math.floor(Math.random() * 3))
+      break
+    }
+  }
 }
 
 export default class Sudoku extends React.Component<{}, SudokuState> {
@@ -182,13 +280,13 @@ export default class Sudoku extends React.Component<{}, SudokuState> {
     this.setState({errors: errors})
   }
 
-  start(hints: number) {
+  start(difficulty: Difficulty) {
     let solution = new Matrix()
     solution.initialize()
-    this.shuffle(solution)
+    shuffle(solution)
 
     let pruned = solution.clone()
-    prune(pruned, hints)
+    prune(pruned, difficulty)
 
     let board = pruned.clone()
 
@@ -203,34 +301,6 @@ export default class Sudoku extends React.Component<{}, SudokuState> {
       mode: Mode.PLAYING,
       initial: new Date(),
     })
-  }
-
-  shuffle(matrix: Matrix) {
-    for (let i = 0; i < 100; i++) {
-      switch (Math.floor(Math.random() * 7)) {
-        case 0:
-          matrix.rotate()
-          break
-        case 1:
-          matrix.mirrowRows()
-          break
-        case 2:
-          matrix.mirrorColumns()
-          break
-        case 3:
-          matrix.swapRows(Math.floor(Math.random() * 3), Math.floor(Math.random() * 3))
-          break
-        case 4:
-          matrix.swapColumns(Math.floor(Math.random() * 3), Math.floor(Math.random() * 3))
-          break
-        case 5:
-          matrix.swapRowClusters(Math.floor(Math.random() * 3))
-          break
-        case 6:
-          matrix.swapColumnClusters(Math.floor(Math.random() * 3))
-          break
-      }
-    }
   }
 
   checkVictory(): boolean {
@@ -272,9 +342,9 @@ export default class Sudoku extends React.Component<{}, SudokuState> {
             this.setState({dark: !this.state.dark})
           }}> {this.state.dark ? 'Light mode' : 'Dark mode'}
           </button>
-          <button onClick={() => this.start(65)}> New easy</button>
-          <button onClick={() => this.start(45)}> New medium</button>
-          <button onClick={() => this.start(25)}> New hard</button>
+          <button onClick={() => this.start(Difficulty.EASY)}> New easy</button>
+          <button onClick={() => this.start(Difficulty.MEDIUM)}> New medium</button>
+          <button onClick={() => this.start(Difficulty.HARD)}> New hard</button>
         </div>
     )
   }
